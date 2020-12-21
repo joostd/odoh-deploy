@@ -1,0 +1,10 @@
+[Unit]
+Description=ODoH proxy and target server daemon
+After=network.target
+ 
+[Service]
+ExecStart=/usr/local/bin/odoh-server
+User=odoh
+ 
+[Install]
+WantedBy=multi-user.target

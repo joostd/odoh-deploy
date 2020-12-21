@@ -1,0 +1,63 @@
+# Ansible playbook
+---
+- hosts: default
+  become: true
+
+  tasks:
+
+  - name: install dependencies
+    apt:
+      update_cache: yes
+      state: latest
+      name: ['libnss3-tools']
+
+  - name: Add a system user for the odoh service to run
+    user:
+      name: odoh
+      comment: ODoH service user
+      create_home: no
+      shell: /usr/sbin/nologin
+      system: yes
+
+  - name: Copy odoh daemon binary into place
+    copy:
+      src: odoh-server/odoh-server
+      dest: /usr/local/bin/
+      owner: root
+      group: root
+      mode: '0755'
+
+  - name: create odoh systemd file
+    template: src=systemd/odoh.service dest=/lib/systemd/system/
+
+  - name: Enable service odoh
+    systemd:
+      name: odoh
+      enabled: yes
+
+# Install Caddy as a reverse HTTPS proxy
+# For other platforms, see https://caddyserver.com/docs/download
+
+  - name: Add caddy repository into sources list
+    apt_repository:
+      repo: deb [trusted=yes] https://apt.fury.io/caddy/ /
+      state: present
+      filename: 'caddy-fury'
+
+  # https://caddyserver.com/docs/install
+  - name: install caddy
+    apt:
+      update_cache: yes
+      state: latest
+      name: ['caddy']
+
+  - name: create Caddyfile
+    template: src=caddy/Caddyfile dest=/etc/caddy/Caddyfile
+
+  - name: Start caddy Service
+    service: name=caddy enabled=true
+
+  handlers:
+
+  - name: restart caddy
+    service: name=caddy state=restarted
